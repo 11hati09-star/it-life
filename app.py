@@ -2,9 +2,10 @@ import streamlit as st
 import os
 import json
 import random
+import time
 from datetime import datetime
 
-# 모바일 화면 최적화 및 메타 설정 (v0.024 메이플 RPG 에디션)
+# 모바일 화면 최적화 및 메타 설정 (v0.025 이펙트 컷신 에디션)
 st.set_page_config(
     page_title="잇(it)시대를 즐기기",
     page_icon="🎮",
@@ -39,6 +40,16 @@ st.markdown("""
     .stat-display { 
         background-color: #161b26; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #233554; line-height: 1.8;
     }
+    .cutscene-box {
+        background-color: #2b1f1a; padding: 30px; border-radius: 15px;
+        border: 2px solid #ffeb3b; text-align: center; margin-bottom: 25px;
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.7); }
+        70% { box-shadow: 0 0 0 15px rgba(255, 235, 59, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0); }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -50,7 +61,6 @@ MSG_FILE = "manager_messages.txt"
 SAVE_FILE = "player_save.json"
 LOG_FILE = "system_log.txt"
 
-# 🚀 [메이플식 레벨 디자인] 1~300레벨 구간별 직급 맵핑 (총 15개 랭크)
 def get_rank_name(level):
     if level < 10: return "전산서기보 (9급) 시보 [초보자]"           # Rank 0
     elif level < 30: return "전산서기보 (9급) [전산실 막내]"         # Rank 1
@@ -68,10 +78,9 @@ def get_rank_name(level):
     elif level < 300: return "대한민국 국무총리 (행정부 2인자)"       # Rank 13
     else: return "대한민국 대통령 (👑 디지털 혁신 대통령)"           # Rank 14
 
-# 레벨에 따른 필요 경험치 기하급수적 증가 로직 (RPG 노가다 시스템)
 def get_max_exp(level):
     if level >= 300: return 1
-    return 100 + (level * 15)  # 렙업할수록 요구 클릭 수 대폭 증가
+    return 100 + (level * 15)  
 
 def append_log(event_type, details):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -169,23 +178,8 @@ if st.session_state.user_role is None:
 # 🕹️ [USER LAYER] 조규동 과장님 전용 런처 구역
 # -----------------------------------------------------------------
 elif st.session_state.user_role == "player":
-    # --- 시각적 이펙트 처리 (버튼 클릭 후 리로드 시 발생) ---
-    if st.session_state.get("call_effect"):
-        st.snow()
-        st.toast("전송 완료! GM강현에게 전령이 빛의 속도로 날아갔습니다 🚀")
-        st.session_state.call_effect = False
-        
-    if st.session_state.get("job_advance"):
-        st.balloons()
-        st.toast(f"🎉 직급 승진! 새로운 관직에 취임하셨습니다!", icon="🎉")
-        st.session_state.job_advance = False
-    elif st.session_state.get("level_up"):
-        st.toast(f"✨ 폭풍 근무로 레벨 업!", icon="✨")
-        st.session_state.level_up = False
-    # ---------------------------------------------------------
-
     st.title("🎮 잇(it)시대를 즐기기")
-    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.024`")
+    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.025`")
     st.write("---")
 
     current_notice = get_gm_notice()
@@ -201,7 +195,7 @@ elif st.session_state.user_role == "player":
     st.markdown("### ⚡ 국가 디지털 혁신 능력 강화 훈련원")
     st.metric(label="현재 관직 스펙", value=f"Lv.{player_data['p_level']} {player_data['guild_rank']}")
     
-    # 경험치 게이지 계산 (퍼센트)
+    # 경험치 게이지 계산
     max_exp = get_max_exp(player_data['p_level'])
     current_exp = player_data['exp']
     if player_data['p_level'] >= 300:
@@ -214,54 +208,74 @@ elif st.session_state.user_role == "player":
     st.progress(percent, text=exp_text)
     st.write("") 
     
-    if st.button("💻 [폭풍 야근] 쉴 틈 없이 미친 듯이 실무 근무하기 💦"):
-        if player_data['p_level'] >= 300:
-            st.toast("👑 이미 국가 정점에 도달하여 더 이상 진급할 수 없습니다!")
-        else:
-            # 1회 클릭 시 10 ~ 25의 무작위 경험치 획득 (노가다 시스템)
-            gain = random.randint(10, 25)
-            player_data['exp'] += gain
-            append_log("폭풍 근무", f"과장님이 폭풍 야근을 통해 경험치 {gain}을 획득했습니다.")
-            
-            if player_data['exp'] >= max_exp:
-                player_data['exp'] -= max_exp  # 초과분 이월
-                player_data['p_level'] += 1
-                new_rank = get_rank_name(player_data['p_level'])
-                
-                # 전직(구간 돌파) 시 풍선 이펙트, 단순 렙업 시 토스트 이펙트
-                if new_rank != player_data['guild_rank']:
-                    player_data['guild_rank'] = new_rank
-                    st.session_state.job_advance = True
-                    append_log("직급 승진", f"과장님이 Lv.{player_data['p_level']} [{player_data['guild_rank']}] 관직에 올랐습니다.")
-                else:
-                    st.session_state.level_up = True
-            
-        save_player_data(player_data)
+    # ⭐ [컷신 모드] 직급 승진 시 버튼을 숨기고 강제 이펙트 뷰어 가동
+    if st.session_state.get("is_job_advancing"):
+        st.balloons()
+        st.markdown(f"""
+        <div class="cutscene-box">
+            <h2>🎉 웅장한 빰빠레! 🎉</h2>
+            <h4>과장님께서 <b>[{player_data['guild_rank']}]</b>(으)로 영전하셨습니다!</h4>
+            <p style="color: #999;">⏳ 전직 이펙트 감상 중... (잠시 후 실무로 자동 복귀합니다)</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 3초간 강제 대기(버튼 클릭 원천 차단) 후 원상복구
+        time.sleep(3.0)
+        st.session_state.is_job_advancing = False
         st.rerun()
+
+    else:
+        # 일반 레벨업은 흐름 끊기지 않게 토스트만 띄우기
+        if st.session_state.get("level_up"):
+            st.toast(f"✨ 폭풍 근무로 레벨 업 (Lv.{player_data['p_level']})!", icon="✨")
+            st.session_state.level_up = False
+
+        if st.button("💻 [폭풍 야근] 쉴 틈 없이 미친 듯이 실무 근무하기 💦"):
+            if player_data['p_level'] >= 300:
+                st.toast("👑 이미 국가 정점에 도달하여 더 이상 진급할 수 없습니다!")
+            else:
+                gain = random.randint(10, 25)
+                player_data['exp'] += gain
+                append_log("폭풍 근무", f"과장님이 폭풍 야근을 통해 경험치 {gain}을 획득했습니다.")
+                
+                if player_data['exp'] >= max_exp:
+                    player_data['exp'] -= max_exp  
+                    player_data['p_level'] += 1
+                    new_rank = get_rank_name(player_data['p_level'])
+                    
+                    if new_rank != player_data['guild_rank']:
+                        player_data['guild_rank'] = new_rank
+                        st.session_state.is_job_advancing = True  # 다음 새로고침 시 컷신 모드 진입
+                        append_log("직급 승진", f"과장님이 Lv.{player_data['p_level']} [{player_data['guild_rank']}] 관직에 올랐습니다.")
+                    else:
+                        st.session_state.level_up = True
+                
+            save_player_data(player_data)
+            st.rerun()
 
     st.write("---")
 
     with st.expander("🚀 메이플식 '디지털 혁신 대통령' 300레벨 전직 도감"):
         st.markdown("""
-        **[0단계] 공직 입문 튜토리얼 (Lv.1 ~ 9)**
+        **[0차] 공직 입문 튜토리얼 (Lv.1 ~ 9)**
         * **9급 전산서기보 시보:** 공무원의 첫걸음, 무자비한 수습기간을 버텨라!
 
-        **[1단계] 실무 기술 전문가 과정 (Lv.10 ~ 89)**
+        **[1차 전직] 실무 기술 전문가 과정 (Lv.10 ~ 89)**
         * **Lv.10~29 (9급 전산서기보):** 전산실 막내 / 국가 시스템 모니터링
         * **Lv.30~49 (8급 전산서기):** 행정망 유지보수 / 국가적 전산 장애 해결
         * **Lv.50~69 (7급 전산주사보):** 과기정통부 인공지능기반과 주무관
         * **Lv.70~89 (6급 전산주사):** 과기정통부 디지털보안팀장
 
-        **[2단계] 디지털 정책 관리자 과정 (Lv.90 ~ 149)**
+        **[2차 전직] 디지털 정책 관리자 과정 (Lv.90 ~ 149)**
         * **Lv.90~119 (5급 전산사무관):** 소프트웨어정책과 차석 / 정책 기획
         * **Lv.120~149 (4급 전산서기관):** 디지털정부기획과장 / 'AI 행정망' 구축 주도
 
-        **[3단계] 고위공무원단 및 국가 CTO (Lv.150 ~ 249)**
+        **[3차 전직] 고위공무원단 및 국가 CTO (Lv.150 ~ 249)**
         * **Lv.150~179 (3급 전산부이사관):** 디플정 위원회 본부장
         * **Lv.180~209 (2급 전산이사관):** 국가정보자원관리원장 / 사이버 테러 방어
         * **Lv.210~249 (1급 전산관리관):** 과기정통부 정책실장 / 국가 CTO
 
-        **[4단계] 국가 디지털 사령탑 (Lv.250 ~ 299)**
+        **[4차 전직] 국가 디지털 사령탑 (Lv.250 ~ 299)**
         * **Lv.250~269 (차관급):** 디지털플랫폼정부위원회 위원장
         * **Lv.270~289 (장관급):** 과학기술정보통신부 장관
         * **Lv.290~299 (부총리급):** 기획재정부 장관 겸 경제부총리
@@ -272,22 +286,29 @@ elif st.session_state.user_role == "player":
 
     st.write("---")
 
-    # ⭐ [기능 통합] 전령 + 버그 리포트를 하나로 일원화 완료
     st.markdown("### 🚨 실시간 핫라인 (GM 호출 창)")
     st.write("메시지를 남기거나, 공란으로 두고 버튼만 눌러도 전담 GM강현이 즉시 호출됩니다.")
     
     manager_text = st.text_input("전령 / 장애 신고 내용 입력:", placeholder="카톡 먹통, 알고리즘 이상 등 텍스트를 자유롭게 입력하세요.", key="m_text")
         
-    if st.button("⚡ GM 호출하기"):
-        if manager_text.strip():
-            final_msg = f"[전송 메시지] {manager_text.strip()}"
-        else:
-            final_msg = f"[긴급 호출] 조규동 과장님이 즉시 호출을 요청하셨습니다."
-            
-        append_manager_message(final_msg)
-        append_log("GM 호출", f"과장님이 GM을 호출했습니다: '{final_msg}'")
-        st.session_state.call_effect = True  # 호출 이펙트 플래그 켜기
+    # ⭐ [컷신 모드] GM 호출 시에도 눈 쏟아지는 걸 감상하도록 버튼 숨김
+    if st.session_state.get("is_calling_gm"):
+        st.snow()
+        st.info("🚀 찌릿-! GM강현에게 전령이 빛의 속도로 날아가고 있습니다 🚀")
+        time.sleep(2.5) # 눈 내리는 이펙트 강제 감상
+        st.session_state.is_calling_gm = False
         st.rerun()
+    else:
+        if st.button("⚡ GM 호출하기"):
+            if manager_text.strip():
+                final_msg = f"[전송 메시지] {manager_text.strip()}"
+            else:
+                final_msg = f"[긴급 호출] 조규동 과장님이 즉시 호출을 요청하셨습니다."
+                
+            append_manager_message(final_msg)
+            append_log("GM 호출", f"과장님이 GM을 호출했습니다: '{final_msg}'")
+            st.session_state.is_calling_gm = True  # 다음 새로고침 시 컷신 모드 진입
+            st.rerun()
 
     st.write("---")
 
