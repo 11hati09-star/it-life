@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime
 
-# 모바일 화면 최적화 및 메타 설정 (v0.021 예외 처리 패치)
+# 모바일 화면 최적화 및 메타 설정 (v0.022 UI 클린업)
 st.set_page_config(
     page_title="잇(it)시대를 즐기기",
     page_icon="🎮",
@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------
-# 🎨 글로벌 테마 CSS 최상단 격리 (로그인 페이지 스타일 깨짐 방지)
+# 🎨 글로벌 테마 CSS 최상단 격리
 # -----------------------------------------------------------------
 st.markdown("""
     <style>
@@ -29,25 +29,14 @@ st.markdown("""
     .stButton>button:hover { transform: translateY(-2px); }
     .status-box {
         background-color: #1e222b; padding: 22px; border-radius: 15px;
-        border-left: 5px solid #ff9800; margin-bottom: 25px;
+        border-left: 5px solid #ff9800; margin-bottom: 25px; line-height: 1.6;
     }
     .gm-box {
         background-color: #1a1c23; padding: 15px; border-radius: 12px;
         border: 2px dashed #00ffcc; color: #00ffcc; margin-bottom: 20px;
     }
-    .clicker-box {
-        background-color: #251f1a; padding: 20px; border-radius: 15px;
-        border: 2px solid #ff9800; text-align: center; margin-bottom: 25px;
-    }
-    .msg-box {
-        background-color: #161a23; padding: 20px; border-radius: 15px;
-        border: 1px solid #4f5b66; margin-bottom: 25px;
-    }
     .stat-display { 
-        background-color: #161b26; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #233554; 
-    }
-    .patch-btn>button { 
-        background: linear-gradient(135deg, #00ffcc, #00b3ff) !important; color: #0b0f19 !important; 
+        background-color: #161b26; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #233554; line-height: 1.8;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -111,14 +100,12 @@ def append_manager_message(text):
     with open(MSG_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{now}] 과장님: {text}\n")
 
-# 데이터 로드 시 구버전 오버플로우 자동 필터링 적용
 def load_player_data():
     if os.path.exists(SAVE_FILE):
         with open(SAVE_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             if "last_access" not in data: data["last_access"] = "기록 없음"
             
-            # ⭐ [핵심 방어 코드] 기존 저장 데이터에 14레벨을 초과하는 구버전 잔재가 있다면 14로 자동 강제 보정
             if data.get("p_level", 1) > 14:
                 data["p_level"] = 14
                 data["guild_rank"] = get_rank_name(14)
@@ -160,13 +147,12 @@ if st.session_state.user_role is None:
     user_password = st.text_input("액세스 코드 입력", type="password", placeholder="코드를 입력하세요")
     
     if st.button("인증 메커니즘 가동"):
-        # 조규동 과장님 한글 타자 패스워드 적용
         if user_password == "whrbehd": 
             st.session_state.user_role = "player"
             p_data = load_player_data()
             p_data["last_access"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             save_player_data(p_data)
-            append_log("시스템 접속", "과장님이 성공적으로 검증을 마치고 메인 대시보드에 진입했습니다.")
+            append_log("시스템 접속", "조규동 과장님이 대시보드에 진입하셨습니다.")
             st.rerun()
         elif user_password == "admin123":
             st.session_state.user_role = "admin"
@@ -180,7 +166,7 @@ if st.session_state.user_role is None:
 # -----------------------------------------------------------------
 elif st.session_state.user_role == "player":
     st.title("🎮 잇(it)시대를 즐기기")
-    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.021`")
+    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.022`")
     st.write("---")
 
     current_notice = get_gm_notice()
@@ -192,11 +178,11 @@ elif st.session_state.user_role == "player":
     """, unsafe_allow_html=True)
 
     player_data = load_player_data()
-    st.markdown('<div class="clicker-box">', unsafe_allow_html=True)
-    st.markdown("### ⚡ 국가 디지털 혁신 능력 강화 훈련원")
     
+    st.markdown("### ⚡ 국가 디지털 혁신 능력 강화 훈련원")
     st.metric(label="현재 관직 스펙", value=f"Lv.{player_data['p_level']} {player_data['guild_rank']}")
     st.progress(player_data['exp'] / 100, text=f"다음 랭크 상위 승진까지 진척도 {player_data['exp']}%")
+    st.write("") # 약간의 여백
     
     if st.button("🔥 [적응력 주문서] 클릭하여 행정 역량 강화하기"):
         if player_data['p_level'] >= 14:
@@ -221,7 +207,8 @@ elif st.session_state.user_role == "player":
         
         save_player_data(player_data)
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("---")
 
     with st.expander("🚀 '디지털 혁신 대통령' 전체 커리어 로드맵 도감 확인"):
         st.markdown("""
@@ -250,7 +237,8 @@ elif st.session_state.user_role == "player":
         * **Lv.14 대한민국 대통령:** 전산직 9급 출신 최초의 국가원수 / '기술 강국 대한민국'을 완성하는 혁신 대통령
         """)
 
-    st.markdown('<div class="msg-box">', unsafe_allow_html=True)
+    st.write("---")
+
     st.markdown("### ✉ Preserved 전령 발송 (GM 소통창)")
     st.write("GM강현의 제어 콘솔로 실시간 비공개 전령을 전송합니다.")
     manager_text = st.text_input("메시지 입력란:", placeholder="", key="m_text")
@@ -260,14 +248,18 @@ elif st.session_state.user_role == "player":
             append_log("전령 수신", f"과장님이 전령을 발송했습니다: '{manager_text}'")
             st.success("✨ 서버 포탈을 통해 GM강현의 전산직 관리자 콘솔로 전령이 도달했습니다!")
             st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+            
+    st.write("---")
 
-    st.markdown('<div class="status-box">', unsafe_allow_html=True)
-    st.markdown("### 🏆 플레이어 고정 패시브 스펙")
-    st.markdown("**• 플레이어:** 조규동 과장님 (Level. MAX)")
-    st.markdown("**• 영구 장착 타이틀:** `신규 공무원의 등불`, `인덕(人德) 만렙`, `기다림의 미학 마스터`")
-    st.markdown("**• 상시 적용 버프:** GM강현의 평생 무상 전산 장애 사후지원 프로토콜")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # 빈 껍데기 박스 없이 텍스트를 하나의 박스 안에 깔끔하게 통합 렌더링
+    st.markdown("""
+    <div class="status-box">
+        <h3 style='margin-top: 0;'>🏆 플레이어 고정 패시브 스펙</h3>
+        <b>• 플레이어:</b> 조규동 과장님 (Level. MAX)<br><br>
+        <b>• 영구 장착 타이틀:</b> <code style='color:#ff9800;'>신규 공무원의 등불</code>, <code style='color:#ff9800;'>인덕(人德) 만렙</code>, <code style='color:#ff9800;'>기다림의 미학 마스터</code><br><br>
+        <b>• 상시 적용 버프:</b> GM강현의 평생 무상 전산 장애 사후지원 프로토콜
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("## 🚨 실시간 전산 장애 버그 리포트")
     bug_type = st.selectbox("장애 증상 선택:", ["카톡이 침묵함", "유튜브 알고리즘 이상함", "와이파이 에러", "기타 디지털 버그"])
@@ -290,12 +282,16 @@ elif st.session_state.user_role == "admin":
     st.write("---")
 
     player_data = load_player_data()
-    st.markdown("<div class='stat-display'>", unsafe_allow_html=True)
-    st.markdown("### 📊 실시간 플레이어(과장님) 계정 매트릭스")
-    st.write(f"• **최근 대시보드 로그인 타임스탬프:** `{player_data['last_access']}`")
-    st.write(f"• **현재 원격 직급 상태:** {player_data['guild_rank']} (Lv.{player_data['p_level']})")
-    st.write(f"• **현재 랭크 경험치 진척도:** {player_data['exp']}%")
-    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # 어드민 페이지 매트릭스도 단일 박스로 통합하여 클린업
+    st.markdown(f"""
+    <div class='stat-display'>
+        <h3 style='margin-top:0;'>📊 실시간 플레이어(과장님) 계정 매트릭스</h3>
+        • <b>최근 대시보드 로그인 타임스탬프:</b> <code style='color:#00ffcc;'>{player_data['last_access']}</code><br><br>
+        • <b>현재 원격 직급 상태:</b> {player_data['guild_rank']} (Lv.{player_data['p_level']})<br><br>
+        • <b>현재 랭크 경험치 진척도:</b> {player_data['exp']}%
+    </div>
+    """, unsafe_allow_html=True)
 
     st.subheader("⚙️ 서버 레벨 및 스탯 강제 변조기")
     set_lv = st.number_input("대권 관직 강제 변조 (Lv.1 - Lv.14):", min_value=1, max_value=14, value=int(player_data['p_level']))
@@ -323,13 +319,11 @@ elif st.session_state.user_role == "admin":
 
     st.subheader("📡 서버 실시간 공지사항 원격 패치")
     new_notice = st.text_input("과장님 화면 상단 지령 전송 박스에 심어줄 메시지 입력:")
-    st.markdown('<div class="patch-btn">', unsafe_allow_html=True)
     if st.button("📡 전 서버 실시간 공지사항 배포 가동"):
         save_gm_notice(new_notice)
         append_log("공지 배포", f"GM공지가 실시간 업데이트되었습니다: '{new_notice}'")
         st.success("서버 동기화 가동! 과장님 화면에 실시간 브로드캐스팅 완료.")
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
     st.write("---")
     
