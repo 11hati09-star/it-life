@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+from datetime import datetime
 
 # 모바일 화면 최적화 설정
 st.set_page_config(
@@ -9,171 +11,195 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------
-# 🛡️ 보안 기능 1: 우클릭 차단 및 개발자 도구(F12) 진입 방지 스크립트
+# 💾 서버 실시간 양방향 파일 시스템 (GM ↔ 플레이어)
+# -----------------------------------------------------------------
+NOTICE_FILE = "gm_notice.txt"
+MSG_FILE = "manager_messages.txt"
+
+# 1. GM -> 과장님 지령 읽기/쓰기
+def get_gm_notice():
+    if os.path.exists(NOTICE_FILE):
+        with open(NOTICE_FILE, "r", encoding="utf-8") as f:
+            return f.read()
+    return "현재 상시 사후지원 프로토콜이 가동 중입니다. 안전합니다."
+
+def save_gm_notice(text):
+    with open(NOTICE_FILE, "w", encoding="utf-8") as f:
+        f.write(text)
+
+# 2. 과장님 -> GM 전령 읽기/쓰기 (역방향)
+def get_manager_messages():
+    if os.path.exists(MSG_FILE):
+        with open(MSG_FILE, "r", encoding="utf-8") as f:
+            return f.readlines()
+    return []
+
+def append_manager_message(text):
+    now = datetime.now().strftime("%H:%M:%S")
+    with open(MSG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"[{now}] 과장님: {text}\n")
+
+# -----------------------------------------------------------------
+# 🛡️ 프론트엔드 방어막 (우클릭 및 소스코드 차단)
 # -----------------------------------------------------------------
 st.components.v1.html("""
     <script>
-    // 마우스 우클릭 금지
     document.addEventListener('contextmenu', event => event.preventDefault());
-    
-    // 키보드 보안 (F12, Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+U 소스보기 차단)
     document.onkeydown = function(e) {
-        if(e.keyCode == 123) { return false; } // F12
+        if(e.keyCode == 123) { return false; }
         if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; }
         if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; }
-        if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; }
-        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // 소스 보기
+        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; }
     }
     </script>
 """, height=0, width=0)
 
 # -----------------------------------------------------------------
-# 🔑 보안 기능 2: VIP 인증 시스템 (비밀번호 체크)
+# 🔑 VIP 인증 시스템 (비밀번호: qkrdudcjf)
 # -----------------------------------------------------------------
-def check_password():
-    """사용자가 올바른 비밀번호를 입력했는지 확인하는 함수"""
-    # 최초 접속 시 세션 상태 초기화
-    if "password_correct" not in st.session_state:
-        st.session_state.password_correct = False
+if "password_correct" not in st.session_state:
+    st.session_state.password_correct = False
 
-    # 이미 인증 완료된 경우 바로 통과
+def check_password():
     if st.session_state.password_correct:
         return True
 
-    # 비밀번호 입력 폼 UI 디자인
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.title("🔒 잇(IT) 시대를 즐기기")
     st.subheader("VIP 전용 인증 시스템")
-    st.write("본 플랫폼은 지정된 VIP 전용 공간입니다. 액세스 코드를 입력하세요.")
-
-    # 입력창
     user_password = st.text_input("액세스 코드 입력", type="password", placeholder="비밀번호를 입력하세요")
     
-    # 인증 버튼
     if st.button("인증 메커니즘 가동"):
-        # ⭐ 여기에서 원하는 비밀번호를 설정해봐! (예: 0000 이나 과장님 성함 등)
+        # 과장님 맞춤형 한글타자 패스워드 적용
         if user_password == "qkrdudcjf": 
             st.session_state.password_correct = True
-            st.rerun() # 화면 새로고침하여 본문 진입
+            st.rerun()
         else:
-            st.error("❌ 접근 권한이 없습니다. 올바른 코드가 아닙니다.")
-            
+            st.error("❌ 접근 권한이 없습니다. 지정된 VIP가 아닙니다.")
     return False
 
 # -----------------------------------------------------------------
-# 메인 애플리케이션 구동 구역 (인증 성공 시에만 렌더링)
+# 메인 어플리케이션 구역
 # -----------------------------------------------------------------
 if check_password():
 
-    # MMORPG 감성의 다크 테마 커스텀 CSS
+    # MMORPG 테마 스타일 시트
     st.markdown("""
         <style>
         .main { background-color: #0e1117; color: #ffffff; }
         .stButton>button {
             width: 100%;
             background: linear-gradient(135deg, #ff9800, #f57c00);
-            color: white;
-            font-weight: bold;
-            border-radius: 12px;
-            padding: 16px;
-            font-size: 18px;
-            border: none;
+            color: white; font-weight: bold; border-radius: 12px;
+            padding: 16px; font-size: 18px; border: none;
             box-shadow: 0px 4px 10px rgba(245, 124, 0, 0.3);
-            transition: all 0.3s ease;
         }
-        .stButton>button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0px 6px 15px rgba(245, 124, 0, 0.5);
-        }
+        .stButton>button:hover { transform: translateY(-2px); }
         .status-box {
-            background-color: #1e222b;
-            padding: 22px;
-            border-radius: 15px;
-            border-left: 5px solid #ff9800;
-            margin-bottom: 25px;
-            box-shadow: 0px 4px 6px rgba(0,0,0,0.2);
+            background-color: #1e222b; padding: 22px; border-radius: 15px;
+            border-left: 5px solid #ff9800; margin-bottom: 25px;
         }
-        .content-box {
-            background-color: #161a23;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #2d3139;
-            margin-bottom: 12px;
+        .gm-box {
+            background-color: #1a1c23; padding: 15px; border-radius: 12px;
+            border: 2px dashed #00ffcc; color: #00ffcc; margin-bottom: 20px;
         }
-        .patch-box {
-            background-color: #1c202a;
-            padding: 15px;
-            border-radius: 10px;
-            border-bottom: 2px solid #4f5b66;
-            margin-bottom: 10px;
+        .clicker-box {
+            background-color: #251f1a; padding: 20px; border-radius: 15px;
+            border: 2px solid #ff9800; text-align: center; margin-bottom: 25px;
+        }
+        .msg-box {
+            background-color: #161a23; padding: 20px; border-radius: 15px;
+            border: 1px solid #4f5b66; margin-bottom: 25px;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # TITLE & HEADER
     st.title("🎮 잇(IT) 시대를 즐기기")
-    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v1.0`")
+    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v1.2`")
     st.write("---")
 
-    # 1. 플레이어 캐릭터 정보창 (Status)
-    st.markdown('<div class="status-box">', unsafe_allow_html=True)
-    st.markdown("### 🏆 만렙 플레이어 스테이터스")
-    st.markdown("**• 플레이어:** 과장님 (Level. MAX)")
-    st.markdown("**• 클래스:** 영예로운 퇴직자 (공직 마스터)")
-    st.markdown("**• 전 소속 길드:** 동해 오피스 ➡️ **[현 소속]** 자유주의 힙스터 길드")
-    st.markdown("**• 장착 타이틀:** `신규 공무원의 등불`, `인덕(人德) 만렙`, `기다림의 미학 마스터`")
-    st.markdown("**• 영구 버프:** 후배 전산직의 평생 무상 IT 사후지원 항시 적용")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # 📡 [GM -> 과장님] 실시간 지령창
+    current_notice = get_gm_notice()
+    st.markdown(f"""
+    <div class="gm-box">
+        <span style='font-weight:bold;'>📡 GM(전산직 후배)의 실시간 지령:</span><br>
+        <span style='font-size: 16px;'>" {current_notice} "</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # 2. 엔드게임 콘텐츠: '잇(it)' 라이프 가이드
-    st.markdown("## 🧭 잇(it) 라이프 핵심 가이드")
-    st.write("이제 출근 전쟁은 끝났습니다. 전산직 후배가 보증하는 스마트 디지털 콘텐츠를 즐기세요.")
+    # 🕹️ [광클 노가다] 인싸력 강화 시스템
+    if "exp" not in st.session_state:
+        st.session_state.exp = 0
+        st.session_state.p_level = 1
+        st.session_state.guild_rank = "동해 오피스 소속"
 
-    with st.expander("📺 광고 없이 유튜브/OTT 즐기는 팁"):
-        st.markdown('<div class="content-box">', unsafe_allow_html=True)
-        st.markdown("**1. 유튜브 프리미엄 활용하기**\n- 광고 없이 트로트, 골프, 옛날 예능 영상을 끊김 없이 보실 수 있는 필수 버프입니다.")
-        st.markdown("**2. 스마트 TV 연동**\n- 스마트폰 화면을 거실 큰 TV로 미러링하여 영화관처럼 즐기는 방법을 세팅해 드립니다.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with st.expander("📸 스마트폰 인생샷 사진첩 마스터"):
-        st.markdown('<div class="content-box">', unsafe_allow_html=True)
-        st.markdown("- 등산이나 여행 가셔서 풍경 사진 기가 막히게 찍는 기본 구도 팁 가이드 수록 예정.")
-        st.markdown("- 터치 한 번으로 얼굴 화사하게 나오는 추천 보정 앱 패치 예정.")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # 3. 핵심 기능: 실시간 버그 리포트 (SLA 핫라인)
-    st.write("---")
-    st.markdown("## 🚨 실시간 전산 장애 버그 리포트")
-    st.write("디지털 세상(스마트폰, PC, 와이파이 등)에서 버그가 발생하면 즉시 전담 GM을 호출하세요.")
-
-    bug_type = st.selectbox(
-        "현재 발생한 장애 증상을 선택하세요:",
-        ["카카오톡이 알 수 없는 이유로 침묵함", 
-         "유튜브 알고리즘이 이상한 영상만 추천함", 
-         "와이파이 비밀번호가 기억의 저편으로 사라짐", 
-         "기타 디지털 세상의 모든 짜증나는 에러"]
-    )
-
-    if st.button("⚡ 긴급 GM 호출하기 (SLA 10분 보장)"):
+    st.markdown('<div class="clicker-box">', unsafe_allow_html=True)
+    st.markdown("### ⚡ 잇(IT) 인싸력 강화 훈련원")
+    
+    if st.session_state.exp >= 100:
+        st.session_state.p_level += 1
+        st.session_state.exp = 0
+        if st.session_state.p_level == 2: st.session_state.guild_rank = "유튜브 정복자"
+        elif st.session_state.p_level == 3: st.session_state.guild_rank = "동네 스크린골프 지배자"
+        elif st.session_state.p_level == 4: st.session_state.guild_rank = "자유로운 힙스터 길드장"
+        else: st.session_state.guild_rank = "우주 최강 백수 마스터"
         st.balloons()
-        st.success(f"🚨 [{bug_type}] 버그 리포트가 전담 GM에게 실시간으로 접수되었습니다!")
-        st.info("💡 과장님, 실제로 연락을 주시면 GM이 원격 및 출장 버그 수정을 즉시 지원합니다.")
+        st.toast(f"🎉 LEVEL UP! [{st.session_state.guild_rank}] 달성!")
 
-    # 4. 지속 가능성의 핵심: 패치 노트 (Patch Notes)
+    st.metric(label="현재 등급", value=f"Lv.{st.session_state.p_level} {st.session_state.guild_rank}")
+    st.progress(st.session_state.exp / 100, text=f"다음 레벨업까지 EXP {st.session_state.exp}%")
+    
+    if st.button("🔥 [인싸력 강화 주문서] 클릭하여 레벨업하기"):
+        st.session_state.exp += 20
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # ✉️ [과장님 -> GM] 역방향 상호작용 통신창
+    st.markdown('<div class="msg-box">', unsafe_allow_html=True)
+    st.markdown("### ✉️ GM에게 전령 발송 (양방향 소통창)")
+    st.write("GM(후배)에게 실시간으로 한마디를 원격 전송합니다.")
+    manager_text = st.text_input("메시지 입력란:", placeholder="ex) 고맙네 후배! 훈련원 레벨 다 올렸네 하하", key="m_text")
+    if st.button("🚀 전령 발송 (GM 콘솔로 전송)"):
+        if manager_text:
+            append_manager_message(manager_text)
+            st.success("✨ 포탈을 통해 GM의 전산직 콘솔로 전령이 무사히 전달되었습니다!")
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 🏆 플레이어 영구 고정 스펙 창
+    st.markdown('<div class="status-box">', unsafe_allow_html=True)
+    st.markdown("### 🏆 플레이어 영구 고정 스펙")
+    st.markdown("**• 플레이어:** 과장님 (Level. MAX)")
+    st.markdown("**• 장착 타이틀:** `신규 공무원의 등불`, `인덕(人德) 만렙`, `기다림의 미학 마스터`")
+    st.markdown("**• 영구 지속 버프:** 후배 전산직의 평생 무상 IT 사후지원 항시 적용")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 🚨 실시간 버그 리포트
+    st.markdown("## 🚨 실시간 전산 장애 버그 리포트")
+    bug_type = st.selectbox("장애 증상 선택:", ["카톡이 침묵함", "유튜브 알고리즘 이상함", "와이파이 에러", "기타 디지털 버그"])
+    if st.button("⚡ 긴급 GM 호출하기 (SLA 10분 보장)"):
+        st.success(f"🚨 [{bug_type}] 리포트가 전담 GM에게 전송되었습니다!")
+
+    # 🛠️ 히든 콘솔: [전산직 전용 관리자 페이지]
     st.write("---")
-    st.markdown("## 📢 전담 GM 정기 패치 노트")
-
-    st.markdown('<div class="patch-box">', unsafe_allow_html=True)
-    st.markdown("#### 🛠️ Ver 1.0.0 (그랜드 오픈) - 2026.06.05")
-    st.markdown("- 과장님의 영예로운 정년퇴직 기념 대시보드 서버 정식 오픈")
-    st.markdown("- 평생 무상 전산 AS 핫라인 상시 가동")
-    st.markdown("- 실수 가득했던 신규 공무원을 믿고 기다려주신 것에 대한 **'무한 감사 버프'** 상시 적용")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="patch-box">', unsafe_allow_html=True)
-    st.markdown("#### ⏳ Ver 1.1.0 (명절 시즌 패치 예정)")
-    st.markdown("- 추석 맞이 극성 스팸 메시지 차단 및 필터링 시스템 업데이트")
-    st.markdown("- 단체 안부 문자 터치 한 번으로 보내기 매크로 가이드 탑재 예정")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.info("🔒 본 앱은 과장님 전용 VIP 플랫폼입니다. 삭제하지 마시면 주기적으로 새로운 꿀팁과 기능이 원격 패치됩니다!")
+    with st.expander("⚙️ 시스템 관리자(전산직 후배) 전용 콘솔"):
+        admin_pw = st.text_input("GM 인증 코드", type="password", key="admin_key")
+        if admin_pw == "admin123":
+            st.success("GM 권한 승인 완료.")
+            
+            # 기능 1: 과장님 화면에 지령 띄우기
+            new_notice = st.text_input("과장님 앱에 띄울 실시간 메시지 입력:")
+            if st.button("📡 서버 전체 공지 원격 패치 가동"):
+                save_gm_notice(new_notice)
+                st.success("서버 지령 업데이트 완료!")
+                st.rerun()
+                
+            # 기능 2: 과장님이 보낸 전령(메시지) 실시간 확인하기
+            st.write("---")
+            st.markdown("### 📥 과장님이 보낸 전령(메시지) 목록")
+            messages = get_manager_messages()
+            if messages:
+                for msg in messages[::-1]:  # 최신 메시지가 위로 오게 역순 출력
+                    st.info(msg.strip())
+            else:
+                st.write("아직 접수된 전령이 없습니다.")
