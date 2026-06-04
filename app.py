@@ -12,13 +12,12 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------
-# 💾 서버 영구 저장 파일 시스템 (DB 대용 JSON & TXT)
+# 💾 서버 영구 저장 파일 시스템 (DB 대용 데이터 가동)
 # -----------------------------------------------------------------
 NOTICE_FILE = "gm_notice.txt"
 MSG_FILE = "manager_messages.txt"
 SAVE_FILE = "player_save.json"
 
-# 1. GM -> 과장님 지령
 def get_gm_notice():
     if os.path.exists(NOTICE_FILE):
         with open(NOTICE_FILE, "r", encoding="utf-8") as f:
@@ -29,7 +28,6 @@ def save_gm_notice(text):
     with open(NOTICE_FILE, "w", encoding="utf-8") as f:
         f.write(text)
 
-# 2. 과장님 -> GM 전령
 def get_manager_messages():
     if os.path.exists(MSG_FILE):
         with open(MSG_FILE, "r", encoding="utf-8") as f:
@@ -41,12 +39,10 @@ def append_manager_message(text):
     with open(MSG_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{now}] 과장님: {text}\n")
 
-# 3. ⭐ 플레이어 세이브 데이터 영구 로드/저장 함수
 def load_player_data():
     if os.path.exists(SAVE_FILE):
         with open(SAVE_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    # 세이브 파일이 없을 때의 초기값 (레벨 1)
     return {"exp": 0, "p_level": 1, "guild_rank": "동해 오피스 소속"}
 
 def save_player_data(data):
@@ -54,49 +50,46 @@ def save_player_data(data):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 # -----------------------------------------------------------------
-# 🛡️ 프론트엔드 방어막 (우클릭 및 소스코드 차단)
+# 🔑 VIP 멀티 인증 및 라우팅 게이트 (세션 상태 기억)
 # -----------------------------------------------------------------
-st.components.v1.html("""
-    <script>
-    document.addEventListener('contextmenu', event => event.preventDefault());
-    document.onkeydown = function(e) {
-        if(e.keyCode == 123) { return false; }
-        if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; }
-        if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; }
-        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; }
-    }
-    </script>
-""", height=0, width=0)
+if "user_role" not in st.session_state:
+    st.session_state.user_role = None  # None, 'player', 'admin' 중 하나로 지정됨
 
-# -----------------------------------------------------------------
-# 🔑 VIP 인증 시스템 (비밀번호: qkrdudcjf)
-# -----------------------------------------------------------------
-if "password_correct" not in st.session_state:
-    st.session_state.password_correct = False
-
-def check_password():
-    if st.session_state.password_correct:
-        return True
-
+if st.session_state.user_role is None:
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.title("🔒 잇(IT) 시대를 즐기기")
-    st.subheader("VIP 전용 인증 시스템")
-    user_password = st.text_input("액세스 코드 입력", type="password", placeholder="비밀번호를 입력하세요")
+    st.subheader("보안 시스템 검증 단계")
+    st.write("지정된 자산 액세스 코드를 입력하여 시스템을 가동하세요.")
+
+    user_password = st.text_input("액세스 코드 입력", type="password", placeholder="코드를 입력하세요")
     
     if st.button("인증 메커니즘 가동"):
         if user_password == "qkrdudcjf": 
-            st.session_state.password_correct = True
+            st.session_state.user_role = "player"
+            st.rerun()
+        elif user_password == "admin123":
+            st.session_state.user_role = "admin"
             st.rerun()
         else:
-            st.error("❌ 접근 권한이 없습니다. 지정된 VIP가 아닙니다.")
-    return False
+            st.error("❌ 접근 권한이 없습니다. 지정된 자산 코드가 아닙니다.")
 
 # -----------------------------------------------------------------
-# 메인 어플리케이션 구역
+# 🕹️ [ROUTE 1] 과장님 전용 플레이어 대시보드 구역
 # -----------------------------------------------------------------
-if check_password():
+elif st.session_state.user_role == "player":
+    # 프론트엔드 크래킹 방어막 장착
+    st.components.v1.html("""
+        <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.onkeydown = function(e) {
+            if(e.keyCode == 123) { return false; }
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; }
+            if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; }
+            if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; }
+        }
+        </script>
+    """, height=0, width=0)
 
-    # MMORPG 테마 스타일 시트
     st.markdown("""
         <style>
         .main { background-color: #0e1117; color: #ffffff; }
@@ -128,10 +121,10 @@ if check_password():
     """, unsafe_allow_html=True)
 
     st.title("🎮 잇(IT) 시대를 즐기기")
-    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v1.3`")
+    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v1.4`")
     st.write("---")
 
-    # 📡 [GM -> 과장님] 실시간 지령창
+    # GM 실시간 지령창
     current_notice = get_gm_notice()
     st.markdown(f"""
     <div class="gm-box">
@@ -140,20 +133,15 @@ if check_password():
     </div>
     """, unsafe_allow_html=True)
 
-    # 🕹️ [영구 데이터 연동] 인싸력 강화 시스템
+    # 인싸력 훈련원 (노가다)
     player_data = load_player_data()
-
     st.markdown('<div class="clicker-box">', unsafe_allow_html=True)
     st.markdown("### ⚡ 잇(IT) 인싸력 강화 훈련원")
-    
-    # 등급 실시간 렌더링
     st.metric(label="현재 등급", value=f"Lv.{player_data['p_level']} {player_data['guild_rank']}")
     st.progress(player_data['exp'] / 100, text=f"다음 레벨업까지 EXP {player_data['exp']}%")
     
     if st.button("🔥 [인싸력 강화 주문서] 클릭하여 레벨업하기"):
         player_data['exp'] += 20
-        
-        # 레벨업 조건 충족 시
         if player_data['exp'] >= 100:
             player_data['p_level'] += 1
             player_data['exp'] = 0
@@ -163,17 +151,13 @@ if check_password():
             else: player_data['guild_rank'] = "우주 최강 백수 마스터"
             st.balloons()
             st.toast(f"🎉 LEVEL UP! [{player_data['guild_rank']}] 달성!")
-        
-        # 파일에 영구 저장
         save_player_data(player_data)
         st.rerun()
-        
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ✉️ [과장님 -> GM] 양방향 전령 발송창
+    # 전령 발송 (과장님 -> 나)
     st.markdown('<div class="msg-box">', unsafe_allow_html=True)
     st.markdown("### ✉️ GM에게 전령 발송 (양방향 소통창)")
-    st.write("GM(후배)에게 실시간으로 한마디를 원격 전송합니다.")
     manager_text = st.text_input("메시지 입력란:", placeholder="ex) 고맙네 후배! 훈련원 레벨 다 올렸네 하하", key="m_text")
     if st.button("🚀 전령 발송 (GM 콘솔로 전송)"):
         if manager_text:
@@ -182,7 +166,7 @@ if check_password():
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 🏆 플레이어 영구 고정 스펙 창
+    # 고정 스펙창
     st.markdown('<div class="status-box">', unsafe_allow_html=True)
     st.markdown("### 🏆 플레이어 영구 고정 스펙")
     st.markdown("**• 플레이어:** 과장님 (Level. MAX)")
@@ -190,32 +174,65 @@ if check_password():
     st.markdown("**• 영구 지속 버프:** 후배 전산직의 평생 무상 IT 사후지원 항시 적용")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 🚨 실시간 버그 리포트
+    # 버그 리포트
     st.markdown("## 🚨 실시간 전산 장애 버그 리포트")
     bug_type = st.selectbox("장애 증상 선택:", ["카톡이 침묵함", "유튜브 알고리즘 이상함", "와이파이 에러", "기타 디지털 버그"])
     if st.button("⚡ 긴급 GM 호출하기 (SLA 10분 보장)"):
         st.success(f"🚨 [{bug_type}] 리포트가 전담 GM에게 전송되었습니다!")
 
-    # 🛠️ 히든 콘솔: [전산직 전용 관리자 페이지]
     st.write("---")
-    with st.expander("⚙️ 시스템 관리자(전산직 후배) 전용 콘솔"):
-        admin_pw = st.text_input("GM 인증 코드", type="password", key="admin_key")
-        if admin_pw == "admin123":
-            st.success("GM 권한 승인 완료.")
-            
-            # 기능 1: 과장님 화면에 지령 띄우기
-            new_notice = st.text_input("과장님 앱에 띄울 실시간 메시지 입력:")
-            if st.button("📡 서버 전체 공지 원격 패치 가동"):
-                save_gm_notice(new_notice)
-                st.success("서버 지령 업데이트 완료!")
-                st.rerun()
-                
-            # 기능 2: 과장님이 보낸 전령(메시지) 실시간 확인하기
-            st.write("---")
-            st.markdown("### 📥 과장님이 보낸 전령(메시지) 목록")
-            messages = get_manager_messages()
-            if messages:
-                for msg in messages[::-1]:  
-                    st.info(msg.strip())
-            else:
-                st.write("아직 접수된 전령이 없습니다.")
+    if st.button("🚪 시스템 안전 로그아웃"):
+        st.session_state.user_role = None
+        st.rerun()
+
+# -----------------------------------------------------------------
+# 🛠️ [ROUTE 2] 나(전산직 후배) 전용 백엔드 관리자 페이지 구역
+# -----------------------------------------------------------------
+elif st.session_state.user_role == "admin":
+    st.markdown("""
+        <style>
+        .main { background-color: #0b0f19; color: #ffffff; }
+        .stat-display { background-color: #161b26; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #233554; }
+        .patch-btn>button { background: linear-gradient(135deg, #00ffcc, #00b3ff) !important; color: #0b0f19 !important; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.title("🛠️ 전산직 후배 전용 GM 제어 콘솔")
+    st.markdown("#### `서버 백엔드 실시간 모니터링 대시보드`")
+    st.write("---")
+
+    # 과장님의 실시간 데이터 로드해서 보여주기
+    player_data = load_player_data()
+    st.markdown("<div class='stat-display'>", unsafe_allow_html=True)
+    st.markdown("### 📊 라이브 플레이어(과장님) 계정 상태")
+    st.write(f"• **현재 레벨:** Lv.{player_data['p_level']}")
+    st.write(f"• **획득 칭호:** {player_data['guild_rank']}")
+    st.write(f"• **강화 진척도:** {player_data['exp']}%")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # 원격 공지사항 업데이트
+    st.subheader("📡 서버 실시간 공지 원격 패치")
+    new_notice = st.text_input("과장님 화면 상단에 실시간으로 심어줄 메시지 입력:")
+    
+    st.markdown('<div class="patch-btn">', unsafe_allow_html=True)
+    if st.button("📡 원격 실시간 공지사항 배포 가동"):
+        save_gm_notice(new_notice)
+        st.success("서버 동기화 성공! 과장님 메인 화면에 즉시 적용되었습니다.")
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write("---")
+    
+    # 과장님이 보낸 전령 메시지 실시간 스트리밍 목록
+    st.subheader("📥 과장님이 보낸 전령(메시지) 보관소")
+    messages = get_manager_messages()
+    if messages:
+        for msg in messages[::-1]:  # 최신 메시지 상단 출력
+            st.info(msg.strip())
+    else:
+        st.write("아직 서버로 수신된 전령이 없습니다.")
+
+    st.write("---")
+    if st.button("🚪 GM 세션 안전 종료"):
+        st.session_state.user_role = None
+        st.rerun()
