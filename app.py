@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime
 
-# 모바일 화면 최적화 및 메타 설정 (v0.017 완벽 조율)
+# 모바일 화면 최적화 및 메타 설정 (v0.021 예외 처리 패치)
 st.set_page_config(
     page_title="잇(it)시대를 즐기기",
     page_icon="🎮",
@@ -111,11 +111,18 @@ def append_manager_message(text):
     with open(MSG_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{now}] 과장님: {text}\n")
 
+# 데이터 로드 시 구버전 오버플로우 자동 필터링 적용
 def load_player_data():
     if os.path.exists(SAVE_FILE):
         with open(SAVE_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             if "last_access" not in data: data["last_access"] = "기록 없음"
+            
+            # ⭐ [핵심 방어 코드] 기존 저장 데이터에 14레벨을 초과하는 구버전 잔재가 있다면 14로 자동 강제 보정
+            if data.get("p_level", 1) > 14:
+                data["p_level"] = 14
+                data["guild_rank"] = get_rank_name(14)
+                data["exp"] = 100
             return data
     return {"exp": 0, "p_level": 1, "guild_rank": "전산서기보 (9급) [전산실 막내]", "last_access": "기록 없음"}
 
@@ -153,7 +160,7 @@ if st.session_state.user_role is None:
     user_password = st.text_input("액세스 코드 입력", type="password", placeholder="코드를 입력하세요")
     
     if st.button("인증 메커니즘 가동"):
-        # 과장님 성함(조규동) 한글 타자 패스워드 적용
+        # 조규동 과장님 한글 타자 패스워드 적용
         if user_password == "whrbehd": 
             st.session_state.user_role = "player"
             p_data = load_player_data()
@@ -173,7 +180,7 @@ if st.session_state.user_role is None:
 # -----------------------------------------------------------------
 elif st.session_state.user_role == "player":
     st.title("🎮 잇(it)시대를 즐기기")
-    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.017`")
+    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.021`")
     st.write("---")
 
     current_notice = get_gm_notice()
@@ -255,7 +262,6 @@ elif st.session_state.user_role == "player":
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ⭐ 주인공 성함 조규동 과장님으로 튜닝 완료!
     st.markdown('<div class="status-box">', unsafe_allow_html=True)
     st.markdown("### 🏆 플레이어 고정 패시브 스펙")
     st.markdown("**• 플레이어:** 조규동 과장님 (Level. MAX)")
