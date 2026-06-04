@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import json
 from datetime import datetime
 
 # 모바일 화면 최적화 설정
@@ -11,12 +12,13 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------
-# 💾 서버 실시간 양방향 파일 시스템 (GM ↔ 플레이어)
+# 💾 서버 영구 저장 파일 시스템 (DB 대용 JSON & TXT)
 # -----------------------------------------------------------------
 NOTICE_FILE = "gm_notice.txt"
 MSG_FILE = "manager_messages.txt"
+SAVE_FILE = "player_save.json"
 
-# 1. GM -> 과장님 지령 읽기/쓰기
+# 1. GM -> 과장님 지령
 def get_gm_notice():
     if os.path.exists(NOTICE_FILE):
         with open(NOTICE_FILE, "r", encoding="utf-8") as f:
@@ -27,7 +29,7 @@ def save_gm_notice(text):
     with open(NOTICE_FILE, "w", encoding="utf-8") as f:
         f.write(text)
 
-# 2. 과장님 -> GM 전령 읽기/쓰기 (역방향)
+# 2. 과장님 -> GM 전령
 def get_manager_messages():
     if os.path.exists(MSG_FILE):
         with open(MSG_FILE, "r", encoding="utf-8") as f:
@@ -38,6 +40,18 @@ def append_manager_message(text):
     now = datetime.now().strftime("%H:%M:%S")
     with open(MSG_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{now}] 과장님: {text}\n")
+
+# 3. ⭐ 플레이어 세이브 데이터 영구 로드/저장 함수
+def load_player_data():
+    if os.path.exists(SAVE_FILE):
+        with open(SAVE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    # 세이브 파일이 없을 때의 초기값 (레벨 1)
+    return {"exp": 0, "p_level": 1, "guild_rank": "동해 오피스 소속"}
+
+def save_player_data(data):
+    with open(SAVE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 # -----------------------------------------------------------------
 # 🛡️ 프론트엔드 방어막 (우클릭 및 소스코드 차단)
@@ -70,7 +84,6 @@ def check_password():
     user_password = st.text_input("액세스 코드 입력", type="password", placeholder="비밀번호를 입력하세요")
     
     if st.button("인증 메커니즘 가동"):
-        # 과장님 맞춤형 한글타자 패스워드 적용
         if user_password == "qkrdudcjf": 
             st.session_state.password_correct = True
             st.rerun()
@@ -115,7 +128,7 @@ if check_password():
     """, unsafe_allow_html=True)
 
     st.title("🎮 잇(IT) 시대를 즐기기")
-    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v1.2`")
+    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v1.3`")
     st.write("---")
 
     # 📡 [GM -> 과장님] 실시간 지령창
@@ -127,34 +140,37 @@ if check_password():
     </div>
     """, unsafe_allow_html=True)
 
-    # 🕹️ [광클 노가다] 인싸력 강화 시스템
-    if "exp" not in st.session_state:
-        st.session_state.exp = 0
-        st.session_state.p_level = 1
-        st.session_state.guild_rank = "동해 오피스 소속"
+    # 🕹️ [영구 데이터 연동] 인싸력 강화 시스템
+    player_data = load_player_data()
 
     st.markdown('<div class="clicker-box">', unsafe_allow_html=True)
     st.markdown("### ⚡ 잇(IT) 인싸력 강화 훈련원")
     
-    if st.session_state.exp >= 100:
-        st.session_state.p_level += 1
-        st.session_state.exp = 0
-        if st.session_state.p_level == 2: st.session_state.guild_rank = "유튜브 정복자"
-        elif st.session_state.p_level == 3: st.session_state.guild_rank = "동네 스크린골프 지배자"
-        elif st.session_state.p_level == 4: st.session_state.guild_rank = "자유로운 힙스터 길드장"
-        else: st.session_state.guild_rank = "우주 최강 백수 마스터"
-        st.balloons()
-        st.toast(f"🎉 LEVEL UP! [{st.session_state.guild_rank}] 달성!")
-
-    st.metric(label="현재 등급", value=f"Lv.{st.session_state.p_level} {st.session_state.guild_rank}")
-    st.progress(st.session_state.exp / 100, text=f"다음 레벨업까지 EXP {st.session_state.exp}%")
+    # 등급 실시간 렌더링
+    st.metric(label="현재 등급", value=f"Lv.{player_data['p_level']} {player_data['guild_rank']}")
+    st.progress(player_data['exp'] / 100, text=f"다음 레벨업까지 EXP {player_data['exp']}%")
     
     if st.button("🔥 [인싸력 강화 주문서] 클릭하여 레벨업하기"):
-        st.session_state.exp += 20
+        player_data['exp'] += 20
+        
+        # 레벨업 조건 충족 시
+        if player_data['exp'] >= 100:
+            player_data['p_level'] += 1
+            player_data['exp'] = 0
+            if player_data['p_level'] == 2: player_data['guild_rank'] = "유튜브 정복자"
+            elif player_data['p_level'] == 3: player_data['guild_rank'] = "동네 스크린골프 지배자"
+            elif player_data['p_level'] == 4: player_data['guild_rank'] = "자유로운 힙스터 길드장"
+            else: player_data['guild_rank'] = "우주 최강 백수 마스터"
+            st.balloons()
+            st.toast(f"🎉 LEVEL UP! [{player_data['guild_rank']}] 달성!")
+        
+        # 파일에 영구 저장
+        save_player_data(player_data)
         st.rerun()
+        
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ✉️ [과장님 -> GM] 역방향 상호작용 통신창
+    # ✉️ [과장님 -> GM] 양방향 전령 발송창
     st.markdown('<div class="msg-box">', unsafe_allow_html=True)
     st.markdown("### ✉️ GM에게 전령 발송 (양방향 소통창)")
     st.write("GM(후배)에게 실시간으로 한마디를 원격 전송합니다.")
@@ -199,7 +215,7 @@ if check_password():
             st.markdown("### 📥 과장님이 보낸 전령(메시지) 목록")
             messages = get_manager_messages()
             if messages:
-                for msg in messages[::-1]:  # 최신 메시지가 위로 오게 역순 출력
+                for msg in messages[::-1]:  
                     st.info(msg.strip())
             else:
                 st.write("아직 접수된 전령이 없습니다.")
