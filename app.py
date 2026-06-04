@@ -3,13 +3,54 @@ import os
 import json
 from datetime import datetime
 
-# 모바일 화면 최적화 및 메타 설정 (v0.016 반영)
+# 모바일 화면 최적화 및 메타 설정 (v0.017 완벽 조율)
 st.set_page_config(
     page_title="잇(it)시대를 즐기기",
     page_icon="🎮",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
+
+# -----------------------------------------------------------------
+# 🎨 글로벌 테마 CSS 최상단 격리 (로그인 페이지 스타일 깨짐 방지)
+# -----------------------------------------------------------------
+st.markdown("""
+    <style>
+    .main { background-color: #0e1117; color: #ffffff; }
+    .stApp { background-color: #0e1117; color: #ffffff; }
+    .stButton>button {
+        width: 100%;
+        background: linear-gradient(135deg, #ff9800, #f57c00);
+        color: white; font-weight: bold; border-radius: 12px;
+        padding: 16px; font-size: 18px; border: none;
+        box-shadow: 0px 4px 10px rgba(245, 124, 0, 0.3);
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover { transform: translateY(-2px); }
+    .status-box {
+        background-color: #1e222b; padding: 22px; border-radius: 15px;
+        border-left: 5px solid #ff9800; margin-bottom: 25px;
+    }
+    .gm-box {
+        background-color: #1a1c23; padding: 15px; border-radius: 12px;
+        border: 2px dashed #00ffcc; color: #00ffcc; margin-bottom: 20px;
+    }
+    .clicker-box {
+        background-color: #251f1a; padding: 20px; border-radius: 15px;
+        border: 2px solid #ff9800; text-align: center; margin-bottom: 25px;
+    }
+    .msg-box {
+        background-color: #161a23; padding: 20px; border-radius: 15px;
+        border: 1px solid #4f5b66; margin-bottom: 25px;
+    }
+    .stat-display { 
+        background-color: #161b26; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #233554; 
+    }
+    .patch-btn>button { 
+        background: linear-gradient(135deg, #00ffcc, #00b3ff) !important; color: #0b0f19 !important; 
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------
 # 💾 서버 영구 저장 및 백엔드 로그 시스템
@@ -19,7 +60,6 @@ MSG_FILE = "manager_messages.txt"
 SAVE_FILE = "player_save.json"
 LOG_FILE = "system_log.txt"
 
-# 🚀 [대권 로드맵] 전산직 9급 출신 최초의 대통령 테크트리 정의 (v0.016 교정본)
 def get_rank_name(level):
     ranks = {
         1: "전산서기보 (9급) [전산실 막내]",
@@ -37,9 +77,8 @@ def get_rank_name(level):
         13: "대한민국 국무총리 (행정부 2인자)",
         14: "대한민국 대통령 (👑 디지털 혁신 대통령)"
     }
-    return ranks.get(level, "👑 세계 디지털 연합 의장")
+    return ranks.get(level, "👑 대한민국 대통령 (👑 디지털 혁신 대통령)")
 
-# 블랙박스 시스템 실시간 로그 기록
 def append_log(event_type, details):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -132,41 +171,10 @@ if st.session_state.user_role is None:
 # 🕹️ [USER LAYER] 과장님 전용 런처 구역
 # -----------------------------------------------------------------
 elif st.session_state.user_role == "player":
-    st.markdown("""
-        <style>
-        .main { background-color: #0e1117; color: #ffffff; }
-        .stButton>button {
-            width: 100%;
-            background: linear-gradient(135deg, #ff9800, #f57c00);
-            color: white; font-weight: bold; border-radius: 12px;
-            padding: 16px; font-size: 18px; border: none;
-            box-shadow: 0px 4px 10px rgba(245, 124, 0, 0.3);
-        }
-        .stButton>button:hover { transform: translateY(-2px); }
-        .status-box {
-            background-color: #1e222b; padding: 22px; border-radius: 15px;
-            border-left: 5px solid #ff9800; margin-bottom: 25px;
-        }
-        .gm-box {
-            background-color: #1a1c23; padding: 15px; border-radius: 12px;
-            border: 2px dashed #00ffcc; color: #00ffcc; margin-bottom: 20px;
-        }
-        .clicker-box {
-            background-color: #251f1a; padding: 20px; border-radius: 15px;
-            border: 2px solid #ff9800; text-align: center; margin-bottom: 25px;
-        }
-        .msg-box {
-            background-color: #161a23; padding: 20px; border-radius: 15px;
-            border: 1px solid #4f5b66; margin-bottom: 25px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
     st.title("🎮 잇(it)시대를 즐기기")
-    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.016`")
+    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.017`")
     st.write("---")
 
-    # GM강현 실시간 공지/지령 수신 상자
     current_notice = get_gm_notice()
     st.markdown(f"""
     <div class="gm-box">
@@ -175,7 +183,6 @@ elif st.session_state.user_role == "player":
     </div>
     """, unsafe_allow_html=True)
 
-    # 대권 도전 훈련원 구역
     player_data = load_player_data()
     st.markdown('<div class="clicker-box">', unsafe_allow_html=True)
     st.markdown("### ⚡ 국가 디지털 혁신 능력 강화 훈련원")
@@ -184,13 +191,20 @@ elif st.session_state.user_role == "player":
     st.progress(player_data['exp'] / 100, text=f"다음 랭크 상위 승진까지 진척도 {player_data['exp']}%")
     
     if st.button("🔥 [적응력 주문서] 클릭하여 행정 역량 강화하기"):
-        if player_data['p_level'] >= 14 and player_data['exp'] >= 80:
-            st.toast("👑 이미 최고 정점인 '대한민국 대통령' 단계에 도달하셨습니다!")
-            player_data['exp'] = 100
+        # ⭐ [보안 패치] 최고 만렙(14레벨) 하드캡 제어 시스템 가동
+        if player_data['p_level'] >= 14:
+            if player_data['exp'] < 100:
+                player_data['exp'] += 20
+                if player_data['exp'] > 100:
+                    player_data['exp'] = 100
+                append_log("행동 훈련", f"과장님이 최고 직급 상태에서 최종 역량을 연마했습니다. (EXP: {player_data['exp']}%)")
+            else:
+                st.toast("👑 이미 최고 정점인 '대한민국 대통령' 단계에 완벽하게 도달하셨습니다!")
         else:
             player_data['exp'] += 20
             append_log("행동 훈련", f"과장님이 역량 강화 훈련을 실행했습니다. (EXP: {player_data['exp']-20}% -> {player_data['exp']}%)")
             
+            # 100% 도달 시에만 안전하게 1단계 레벨업 격리
             if player_data['exp'] >= 100:
                 player_data['p_level'] += 1
                 player_data['exp'] = 0
@@ -203,7 +217,6 @@ elif st.session_state.user_role == "player":
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 🚀 전체 커리어 로드맵을 한눈에 확인할 수 있는 도감 기능 탑재 (v0.016 명칭 동기화)
     with st.expander("🚀 '디지털 혁신 대통령' 전체 커리어 로드맵 도감 확인"):
         st.markdown("""
         **[1단계] 실무 기술 전문가 과정 (9급 ~ 6급)**
@@ -231,7 +244,6 @@ elif st.session_state.user_role == "player":
         * **Lv.14 대한민국 대통령:** 전산직 9급 출신 최초의 국가원수 / '기술 강국 대한민국'을 완성하는 혁신 대통령
         """)
 
-    # 양방향 통신 전령 창
     st.markdown('<div class="msg-box">', unsafe_allow_html=True)
     st.markdown("### ✉ Preserved 전령 발송 (GM 소통창)")
     st.write("GM강현의 제어 콘솔로 실시간 비공개 전령을 전송합니다.")
@@ -244,7 +256,6 @@ elif st.session_state.user_role == "player":
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 고정 불변 스펙
     st.markdown('<div class="status-box">', unsafe_allow_html=True)
     st.markdown("### 🏆 플레이어 고정 패시브 스펙")
     st.markdown("**• 플레이어:** 박영철 과장님 (Level. MAX)")
@@ -252,7 +263,6 @@ elif st.session_state.user_role == "player":
     st.markdown("**• 상시 적용 버프:** GM강현의 평생 무상 전산 장애 사후지원 프로토콜")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 버그 리포트
     st.markdown("## 🚨 실시간 전산 장애 버그 리포트")
     bug_type = st.selectbox("장애 증상 선택:", ["카톡이 침묵함", "유튜브 알고리즘 이상함", "와이파이 에러", "기타 디지털 버그"])
     if st.button("⚡ 긴급 GM 호출하기 (SLA 10분 보장)"):
@@ -269,19 +279,10 @@ elif st.session_state.user_role == "player":
 # 🛠️ [ADMIN LAYER] GM강현 전용 커스텀 제어실 구역
 # -----------------------------------------------------------------
 elif st.session_state.user_role == "admin":
-    st.markdown("""
-        <style>
-        .main { background-color: #0b0f19; color: #ffffff; }
-        .stat-display { background-color: #161b26; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #233554; }
-        .patch-btn>button { background: linear-gradient(135deg, #00ffcc, #00b3ff) !important; color: #0b0f19 !important; }
-        </style>
-    """, unsafe_allow_html=True)
-
     st.title("🛠️ GM강현 전용 제어 콘솔")
     st.markdown("#### `서버 백엔드 커널 및 라이브 모니터링 시스템`")
     st.write("---")
 
-    # 최근 접속 및 상태 실시간 렌더링 모니터링
     player_data = load_player_data()
     st.markdown("<div class='stat-display'>", unsafe_allow_html=True)
     st.markdown("### 📊 실시간 플레이어(과장님) 계정 매트릭스")
@@ -290,7 +291,6 @@ elif st.session_state.user_role == "admin":
     st.write(f"• **현재 랭크 경험치 진척도:** {player_data['exp']}%")
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # 🔧 미세조정 및 초기화 종합 관리 도구 세트 (14단계 대권 스펙 반영 + v0.016 연동)
     st.subheader("⚙️ 서버 레벨 및 스탯 강제 변조기")
     set_lv = st.number_input("대권 관직 강제 변조 (Lv.1 - Lv.14):", min_value=1, max_value=14, value=int(player_data['p_level']))
     set_exp = st.slider("승진 경험치 강제 할당 (%):", min_value=0, max_value=100, step=20, value=int(player_data['exp']))
@@ -315,7 +315,6 @@ elif st.session_state.user_role == "admin":
 
     st.write("---")
 
-    # 원격 실시간 공지 패치 시스템
     st.subheader("📡 서버 실시간 공지사항 원격 패치")
     new_notice = st.text_input("과장님 화면 상단 지령 전송 박스에 심어줄 메시지 입력:")
     st.markdown('<div class="patch-btn">', unsafe_allow_html=True)
@@ -328,15 +327,13 @@ elif st.session_state.user_role == "admin":
 
     st.write("---")
     
-    # 실시간 시스템 블랙박스 로그 모니터링 출력 창
     st.subheader("📜 시스템 실시간 블랙박스 작업 로그")
     logs = get_logs()
-    log_text = "".join(logs[::-1])  # 최신 이벤트 상단 배열
+    log_text = "".join(logs[::-1])  
     st.text_area("Live Kernel Logs", value=log_text, height=180, disabled=True)
 
     st.write("---")
     
-    # 과장님 수신 전령 보관 리스트
     st.subheader("📥 과장님이 실시간 발송한 전령 메시지 보관소")
     messages = get_manager_messages()
     if messages:
