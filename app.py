@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime
 
-# 모바일 화면 최적화 및 메타 설정 (v0.022 UI 클린업)
+# 모바일 화면 최적화 및 메타 설정 (v0.023 기능 통폐합 에디션)
 st.set_page_config(
     page_title="잇(it)시대를 즐기기",
     page_icon="🎮",
@@ -166,7 +166,7 @@ if st.session_state.user_role is None:
 # -----------------------------------------------------------------
 elif st.session_state.user_role == "player":
     st.title("🎮 잇(it)시대를 즐기기")
-    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.022`")
+    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.023`")
     st.write("---")
 
     current_notice = get_gm_notice()
@@ -182,7 +182,7 @@ elif st.session_state.user_role == "player":
     st.markdown("### ⚡ 국가 디지털 혁신 능력 강화 훈련원")
     st.metric(label="현재 관직 스펙", value=f"Lv.{player_data['p_level']} {player_data['guild_rank']}")
     st.progress(player_data['exp'] / 100, text=f"다음 랭크 상위 승진까지 진척도 {player_data['exp']}%")
-    st.write("") # 약간의 여백
+    st.write("") 
     
     if st.button("🔥 [적응력 주문서] 클릭하여 행정 역량 강화하기"):
         if player_data['p_level'] >= 14:
@@ -239,19 +239,30 @@ elif st.session_state.user_role == "player":
 
     st.write("---")
 
-    st.markdown("### ✉ Preserved 전령 발송 (GM 소통창)")
-    st.write("GM강현의 제어 콘솔로 실시간 비공개 전령을 전송합니다.")
-    manager_text = st.text_input("메시지 입력란:", placeholder="", key="m_text")
-    if st.button("🚀 전령 발송하기"):
-        if manager_text:
-            append_manager_message(manager_text)
-            append_log("전령 수신", f"과장님이 전령을 발송했습니다: '{manager_text}'")
-            st.success("✨ 서버 포탈을 통해 GM강현의 전산직 관리자 콘솔로 전령이 도달했습니다!")
-            st.rerun()
+    # ⭐ [기능 통합] 전령 + 버그 리포트를 하나의 완벽한 UI 채널로 일원화
+    st.markdown("### 🚨 실시간 긴급 GM 호출 및 전령 발송")
+    st.write("전담 GM강현에게 원격 지원을 요청하거나 메시지를 남깁니다. (내용을 비워두고 버튼만 눌러도 호출됩니다)")
+    
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        bug_type = st.selectbox("호출 유형 선택:", ["단순 호출 (내용 없음)", "카톡이 침묵함", "유튜브 알고리즘 이상함", "와이파이 에러", "기타 디지털 버그", "자유 전령 발송"])
+    with col2:
+        manager_text = st.text_input("상세 메시지 입력 (선택):", placeholder="내용을 입력하거나 비워둔 채로 전송하세요.", key="m_text")
+        
+    if st.button("⚡ 긴급 GM 호출하기 (SLA 10분 보장)"):
+        # 메시지 비어있을 때와 채워져 있을 때 자동 양식 조율
+        if manager_text.strip():
+            final_msg = f"[{bug_type}] {manager_text.strip()}"
+        else:
+            final_msg = f"[{bug_type}] 과장님이 즉시 호출을 요청하셨습니다."
             
+        append_manager_message(final_msg)
+        append_log("GM 호출", f"과장님이 GM을 호출했습니다: '{final_msg}'")
+        st.success("✨ 서버 포탈을 통해 GM강현의 전산직 관리자 콘솔로 전령 및 리포트가 도달했습니다!")
+        st.rerun()
+
     st.write("---")
 
-    # 빈 껍데기 박스 없이 텍스트를 하나의 박스 안에 깔끔하게 통합 렌더링
     st.markdown("""
     <div class="status-box">
         <h3 style='margin-top: 0;'>🏆 플레이어 고정 패시브 스펙</h3>
@@ -260,12 +271,6 @@ elif st.session_state.user_role == "player":
         <b>• 상시 적용 버프:</b> GM강현의 평생 무상 전산 장애 사후지원 프로토콜
     </div>
     """, unsafe_allow_html=True)
-
-    st.markdown("## 🚨 실시간 전산 장애 버그 리포트")
-    bug_type = st.selectbox("장애 증상 선택:", ["카톡이 침묵함", "유튜브 알고리즘 이상함", "와이파이 에러", "기타 디지털 버그"])
-    if st.button("⚡ 긴급 GM 호출하기 (SLA 10분 보장)"):
-        st.success(f"🚨 [{bug_type}] 리포트가 전담 GM에게 전송되었습니다!")
-        append_log("장애 접수", f"과장님이 [{bug_type}] 긴급 기술 지원을 호출하셨습니다.")
 
     st.write("---")
     if st.button("🚪 시스템 안전 로그아웃"):
@@ -283,7 +288,6 @@ elif st.session_state.user_role == "admin":
 
     player_data = load_player_data()
     
-    # 어드민 페이지 매트릭스도 단일 박스로 통합하여 클린업
     st.markdown(f"""
     <div class='stat-display'>
         <h3 style='margin-top:0;'>📊 실시간 플레이어(과장님) 계정 매트릭스</h3>
