@@ -5,7 +5,7 @@ import random
 import time
 from datetime import datetime
 
-# 모바일 화면 최적화 및 메타 설정 (v0.025 이펙트 컷신 에디션)
+# 모바일 화면 최적화 및 메타 설정 (v0.026 파이어베이스 전광판 동기화 에디션)
 st.set_page_config(
     page_title="잇(it)시대를 즐기기",
     page_icon="🎮",
@@ -130,6 +130,78 @@ def save_player_data(data):
     with open(SAVE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
+# 🚀 [추가 기능] Firebase 연동 X15 전광판 실시간 모니터링 컴포넌트
+def render_gm_monitor():
+    st.components.v1.html("""
+    <div id="monitor-card" style="
+        background-color: #1a1c23; border-radius: 12px; padding: 15px; 
+        display: flex; align-items: center; justify-content: flex-start; gap: 20px;
+        border: 1px solid #233554; border-left: 6px solid #00ffcc;
+        color: white; font-family: 'Malgun Gothic', sans-serif;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 5px;
+    ">
+        <div id="m-icon" style="font-size: 40px; min-width: 50px; text-align: center; text-shadow: 0 2px 5px rgba(0,0,0,0.5);">📡</div>
+        <div style="display: flex; flex-direction: column; justify-content: center;">
+            <span style="font-size: 13px; color: #aaa; font-weight: bold; margin-bottom: 5px; letter-spacing: -0.5px;">📡 GM강현 실시간 근무상황 (X15 전광판 동기화)</span>
+            <span id="m-text" style="font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: #fff;">연결 중...</span>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAP4Hcb0ORe-nWN1Rhg8F-DHZoAhJbRLcs",
+            authDomain: "jyun-san-dh.firebaseapp.com",
+            databaseURL: "https://jyun-san-dh-default-rtdb.firebaseio.com",
+            projectId: "jyun-san-dh",
+            storageBucket: "jyun-san-dh.firebasestorage.app",
+            messagingSenderId: "683475811160",
+            appId: "1:683475811160:web:ed9a340b98606fdef7032d"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+        
+        const stateMap = {
+            "work_0": { text: "업무중", icon: "💻", color: "#1976d2" },
+            "work_sweat": { text: "🔥땀내며 업무중", icon: "💦", color: "#d32f2f" },
+            "work_1": { text: "전산 점검 중", icon: "🔧", color: "#f57c00" },
+            "work_2": { text: "전산 장애 처리 중", icon: "🚨", color: "#d32f2f" },
+            "work_3": { text: "출장", icon: "🚗", color: "#ffa000" },
+            "work_4": { text: "전산 설치 중", icon: "🔌", color: "#f57c00" },
+            "sec_1": { text: "보안점검 중", icon: "🛡️", color: "#d32f2f" },
+            "call_1": { text: "착신", icon: "📞", color: "#0097a7" },
+            "edu_1": { text: "전산 교육 중", icon: "📖", color: "#1976d2" },
+            "away_1": { text: "외출", icon: "🚶", color: "#455a64" },
+            "away_2": { text: "회의 중", icon: "🗣️", color: "#0097a7" },
+            "away_3": { text: "잠깐 자리비움", icon: "☕", color: "#ffa000" },
+            "night_1":{ text: "당직", icon: "🌙", color: "#303f9f" },
+            "night_2":{ text: "당직 휴무", icon: "💤", color: "#455a64" },
+            "lunch": { text: "점심 시간", icon: "🍱", color: "#1976d2" },
+            "holiday":{ text: "오늘은 휴일입니다", icon: "🏡", color: "#455a64" },
+            "blackout":{ text: "화면 보호 모드 (퇴근)", icon: "💤", color: "#222222" },
+            "off_1": { text: "연가", icon: "🌴", color: "#455a64" },
+            "off_2": { text: "병가", icon: "🏥", color: "#455a64" },
+            "off_3": { text: "조퇴", icon: "🏃", color: "#455a64" }
+        };
+
+        db.ref('currentStatus').on('value', (snapshot) => {
+            const val = snapshot.val();
+            let id = "work_0";
+            if (typeof val === 'string') id = val;
+            else if (val && val.id) id = val.id;
+            
+            const state = stateMap[id] || { text: "상태 확인 중...", icon: "❓", color: "#455a64" };
+            
+            document.getElementById('m-icon').innerText = state.icon;
+            document.getElementById('m-text').innerText = state.text;
+            document.getElementById('monitor-card').style.borderLeftColor = state.color;
+        });
+    </script>
+    """, height=110)
+
 # -----------------------------------------------------------------
 # 🛡️ 소스코드 크래킹 차단 방어막 (F12, 우클릭 제한)
 # -----------------------------------------------------------------
@@ -179,7 +251,7 @@ if st.session_state.user_role is None:
 # -----------------------------------------------------------------
 elif st.session_state.user_role == "player":
     st.title("🎮 잇(it)시대를 즐기기")
-    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.025`")
+    st.markdown("#### `VIP 전용 엔드게임 사후지원 플랫폼 v0.026`")
     st.write("---")
 
     current_notice = get_gm_notice()
@@ -189,6 +261,9 @@ elif st.session_state.user_role == "player":
         <span style='font-size: 16px;'>" {current_notice} "</span>
     </div>
     """, unsafe_allow_html=True)
+
+    # ⭐ X15 전광판 모니터 출력
+    render_gm_monitor()
 
     player_data = load_player_data()
     
@@ -219,13 +294,11 @@ elif st.session_state.user_role == "player":
         </div>
         """, unsafe_allow_html=True)
         
-        # 3초간 강제 대기(버튼 클릭 원천 차단) 후 원상복구
         time.sleep(3.0)
         st.session_state.is_job_advancing = False
         st.rerun()
 
     else:
-        # 일반 레벨업은 흐름 끊기지 않게 토스트만 띄우기
         if st.session_state.get("level_up"):
             st.toast(f"✨ 폭풍 근무로 레벨 업 (Lv.{player_data['p_level']})!", icon="✨")
             st.session_state.level_up = False
@@ -245,7 +318,7 @@ elif st.session_state.user_role == "player":
                     
                     if new_rank != player_data['guild_rank']:
                         player_data['guild_rank'] = new_rank
-                        st.session_state.is_job_advancing = True  # 다음 새로고침 시 컷신 모드 진입
+                        st.session_state.is_job_advancing = True  
                         append_log("직급 승진", f"과장님이 Lv.{player_data['p_level']} [{player_data['guild_rank']}] 관직에 올랐습니다.")
                     else:
                         st.session_state.level_up = True
@@ -291,11 +364,10 @@ elif st.session_state.user_role == "player":
     
     manager_text = st.text_input("전령 / 장애 신고 내용 입력:", placeholder="카톡 먹통, 알고리즘 이상 등 텍스트를 자유롭게 입력하세요.", key="m_text")
         
-    # ⭐ [컷신 모드] GM 호출 시에도 눈 쏟아지는 걸 감상하도록 버튼 숨김
     if st.session_state.get("is_calling_gm"):
         st.snow()
         st.info("🚀 찌릿-! GM강현에게 전령이 빛의 속도로 날아가고 있습니다 🚀")
-        time.sleep(2.5) # 눈 내리는 이펙트 강제 감상
+        time.sleep(2.5) 
         st.session_state.is_calling_gm = False
         st.rerun()
     else:
@@ -307,7 +379,7 @@ elif st.session_state.user_role == "player":
                 
             append_manager_message(final_msg)
             append_log("GM 호출", f"과장님이 GM을 호출했습니다: '{final_msg}'")
-            st.session_state.is_calling_gm = True  # 다음 새로고침 시 컷신 모드 진입
+            st.session_state.is_calling_gm = True  
             st.rerun()
 
     st.write("---")
@@ -334,6 +406,9 @@ elif st.session_state.user_role == "admin":
     st.title("🛠️ GM강현 전용 제어 콘솔")
     st.markdown("#### `서버 백엔드 커널 및 라이브 모니터링 시스템`")
     st.write("---")
+
+    # ⭐ X15 전광판 모니터 출력 (관리자 화면에서도 동기화)
+    render_gm_monitor()
 
     player_data = load_player_data()
     
