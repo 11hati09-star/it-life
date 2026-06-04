@@ -139,7 +139,7 @@ st.components.v1.html("""
 """, height=0, width=0)
 
 # -----------------------------------------------------------------
-# 🔑 게이트웨이 인증 구조 (비밀번호: qkrdudcjf)
+# 🔑 게이트웨이 인증 구조
 # -----------------------------------------------------------------
 if "user_role" not in st.session_state:
     st.session_state.user_role = None
@@ -153,7 +153,8 @@ if st.session_state.user_role is None:
     user_password = st.text_input("액세스 코드 입력", type="password", placeholder="코드를 입력하세요")
     
     if st.button("인증 메커니즘 가동"):
-        if user_password == "qkrdudcjf": 
+        # 과장님 성함(조규동) 한글 타자 패스워드 적용
+        if user_password == "whrbehd": 
             st.session_state.user_role = "player"
             p_data = load_player_data()
             p_data["last_access"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -168,7 +169,7 @@ if st.session_state.user_role is None:
             st.error("❌ 접근 권한이 없습니다. 올바른 액세스 코드가 아닙니다.")
 
 # -----------------------------------------------------------------
-# 🕹️ [USER LAYER] 과장님 전용 런처 구역
+# 🕹️ [USER LAYER] 조규동 과장님 전용 런처 구역
 # -----------------------------------------------------------------
 elif st.session_state.user_role == "player":
     st.title("🎮 잇(it)시대를 즐기기")
@@ -191,7 +192,6 @@ elif st.session_state.user_role == "player":
     st.progress(player_data['exp'] / 100, text=f"다음 랭크 상위 승진까지 진척도 {player_data['exp']}%")
     
     if st.button("🔥 [적응력 주문서] 클릭하여 행정 역량 강화하기"):
-        # ⭐ [보안 패치] 최고 만렙(14레벨) 하드캡 제어 시스템 가동
         if player_data['p_level'] >= 14:
             if player_data['exp'] < 100:
                 player_data['exp'] += 20
@@ -204,7 +204,6 @@ elif st.session_state.user_role == "player":
             player_data['exp'] += 20
             append_log("행동 훈련", f"과장님이 역량 강화 훈련을 실행했습니다. (EXP: {player_data['exp']-20}% -> {player_data['exp']}%)")
             
-            # 100% 도달 시에만 안전하게 1단계 레벨업 격리
             if player_data['exp'] >= 100:
                 player_data['p_level'] += 1
                 player_data['exp'] = 0
@@ -256,9 +255,10 @@ elif st.session_state.user_role == "player":
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
+    # ⭐ 주인공 성함 조규동 과장님으로 튜닝 완료!
     st.markdown('<div class="status-box">', unsafe_allow_html=True)
     st.markdown("### 🏆 플레이어 고정 패시브 스펙")
-    st.markdown("**• 플레이어:** 박영철 과장님 (Level. MAX)")
+    st.markdown("**• 플레이어:** 조규동 과장님 (Level. MAX)")
     st.markdown("**• 영구 장착 타이틀:** `신규 공무원의 등불`, `인덕(人德) 만렙`, `기다림의 미학 마스터`")
     st.markdown("**• 상시 적용 버프:** GM강현의 평생 무상 전산 장애 사후지원 프로토콜")
     st.markdown('</div>', unsafe_allow_html=True)
