@@ -232,7 +232,7 @@ if st.session_state.user_role is None:
     user_password = st.text_input("액세스 코드 입력", type="password", placeholder="코드를 입력하세요")
     
     if st.button("인증 메커니즘 가동"):
-        if user_password == "whrbehd": 
+        if user_password == "wlwhrbehddnjs!": 
             st.session_state.user_role = "player"
             p_data = load_player_data()
             p_data["last_access"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
